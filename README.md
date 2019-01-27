@@ -38,6 +38,12 @@ front-end : html5, jsp, jstl, javascript(jQuery, ajax), bootstrap, tiles
 3. 건의사항 
 
       [[back-end]](https://github.com/seonghun127/spring-framework/tree/master/src/main/java/com/sist/retail/qna)  [[front-end]](https://github.com/seonghun127/spring-framework/tree/master/src/main/webapp/notice)
+      
+<img width="600" alt="noticeqna" src="https://user-images.githubusercontent.com/30451129/51799304-508c7600-2263-11e9-9767-2b574ee6f47f.png">
+<img width="600" alt="noticeqnadetail" src="https://user-images.githubusercontent.com/30451129/51799307-571aed80-2263-11e9-8640-5ce5cbdc5ac4.png">
+<img width="600" alt="noticeqnaupdate" src="https://user-images.githubusercontent.com/30451129/51799308-57b38400-2263-11e9-9e66-1eaee7cba84f.png">
+<img width="600" alt="noticeqnainsert" src="https://user-images.githubusercontent.com/30451129/51799309-57b38400-2263-11e9-82d3-83e312cc58af.png">
+
 
 4. 댓글 
 
