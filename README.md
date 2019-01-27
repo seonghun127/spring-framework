@@ -26,17 +26,17 @@ front-end : html5, jsp, jstl, javascript(jQuery, ajax), bootstrap, tiles
 
 ## Implements
 
-* [요구사항 및 설계 단계](https://github.com/seonghun127/spring-framework/tree/master/doc)
+1. [요구사항 및 설계 단계](https://github.com/seonghun127/spring-framework/tree/master/doc)
 
 <img width="600" alt="2019-01-27 6 44 56" src="https://user-images.githubusercontent.com/30451129/51799350-d27c9f00-2263-11e9-9e52-79dcead3a745.png">
 
-* 지점별 발주 이벤트 처리 
+2. 지점별 발주 이벤트 처리 
 
       [[back-end]](https://github.com/seonghun127/spring-framework/tree/master/src/main/java/com/sist/retail/order)  [[front-end]](https://github.com/seonghun127/spring-framework/tree/master/src/main/webapp/master)
       
 <img width="600" alt="masterorder" src="https://user-images.githubusercontent.com/30451129/51799276-e542a400-2262-11e9-8750-9fc140cdffaf.png"><img width="600" alt="masterorderdetail" src="https://user-images.githubusercontent.com/30451129/51799281-eb388500-2262-11e9-843b-9022a3fe3f11.png">
 
-* 건의사항 
+3. 건의사항 
 
       [[back-end]](https://github.com/seonghun127/spring-framework/tree/master/src/main/java/com/sist/retail/qna)  [[front-end]](https://github.com/seonghun127/spring-framework/tree/master/src/main/webapp/notice)
       
@@ -46,7 +46,7 @@ front-end : html5, jsp, jstl, javascript(jQuery, ajax), bootstrap, tiles
 <img width="600" alt="noticeqnainsert" src="https://user-images.githubusercontent.com/30451129/51799309-57b38400-2263-11e9-82d3-83e312cc58af.png">
 
 
-* 댓글 
+4. 댓글 
 
       [[back-end]](https://github.com/seonghun127/spring-framework/tree/master/src/main/java/com/sist/retail/ans)  [[front-end]](https://github.com/seonghun127/spring-framework/tree/master/src/main/webapp/notice)
 
