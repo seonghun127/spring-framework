@@ -12,7 +12,7 @@ front-end : html5, jsp, jstl, javascript(jQuery, ajax), bootstrap, tiles
 ## Built With
 
 * [spring](https://spring.io/) - The web framework used
-* [Maven](https://maven.apache.org/) - Dependency Management
+* [maven](https://maven.apache.org/) - Dependency Management
 * [svn](https://subversion.apache.org/) - Version(Configuration) Management
 
 ## Authors
