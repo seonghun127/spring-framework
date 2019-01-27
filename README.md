@@ -32,6 +32,9 @@ front-end : html5, jsp, jstl, javascript(jQuery, ajax), bootstrap, tiles
 2. 지점별 발주 이벤트 처리 
 
       [[back-end]](https://github.com/seonghun127/spring-framework/tree/master/src/main/java/com/sist/retail/order)  [[front-end]](https://github.com/seonghun127/spring-framework/tree/master/src/main/webapp/master)
+      
+<img width="500" alt="masterorder" src="https://user-images.githubusercontent.com/30451129/51799276-e542a400-2262-11e9-8750-9fc140cdffaf.png">
+<img width="500" alt="masterorderdetail" src="https://user-images.githubusercontent.com/30451129/51799281-eb388500-2262-11e9-843b-9022a3fe3f11.png">
 
 3. 건의사항 
 
