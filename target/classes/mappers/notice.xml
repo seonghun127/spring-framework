@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sist.retail.mappers.notice">
+
+	<!-- 등록 -->
+	<insert id="do_add" parameterType="com.sist.retail.vo.NoticeVo">
+		INSERT INTO NOTICE_TB
+		(
+			MEMO_NO,
+			TITLE,
+			CON,
+			REG_DT,
+			DIV_CD,
+			STO_ID
+		)
+		VALUES
+		(
+			(SELECT MAX(MEMO_NO) FROM NOTICE_TB)+1,
+			#{title},
+			#{con},
+			sysdate,
+			#{divCd},
+			#{stoId}
+		)
+	</insert>
+	
+	<!-- 선택 게시글 불러오기 -->
+	<select id="do_detail" parameterType="com.sist.retail.vo.NoticeVo" resultType="com.sist.retail.vo.NoticeVo">
+		SELECT * FROM 
+			(SELECT TT1.MEMO_NO,	
+					TT1.TITLE,
+					TT1.CON,
+					TT1.DIV_CD,
+					TT1.STO_ID,
+		 	CASE  	WHEN TO_CHAR(TT1.REG_DT,'YYYY-MM-DD') = TO_CHAR(SYSDATE,'YYYY-MM-DD')
+		 		  	THEN TO_CHAR(TT1.REG_DT, 'HH24:MI')
+		 		 	ELSE TO_CHAR(TT1.REG_DT,'YYYY-MM-DD') END AS REG_DT,
+		 		  	TT1.RNUM AS NO,
+		 		  	TT1.TOTAL_CNT as totalNo,
+		 		  	lead(TT1.MEMO_NO, 1, '') over(ORDER BY TT1.REG_DT) NEXT_MEMO_NO,
+	        		lead(TT1.TITLE, 1, '다음글이 없습니다.') over(ORDER BY TT1.REG_DT) NEXT_TITLE,
+	        		lag(TT1.MEMO_NO, 1, '') over(ORDER BY TT1.REG_DT) PRE_MEMO_NO,
+	        		lag(TT1.TITLE, 1, '이전글이 없습니다.') over(ORDER BY TT1.REG_DT) PRE_TITLE
+			FROM
+			(SELECT T1.* ,ROW_NUMBER() OVER (ORDER BY T1.MEMO_NO)AS RNUM, COUNT(*) OVER() AS TOTAL_CNT 
+				FROM NOTICE_TB T1
+			WHERE T1.DIV_CD = #{divCd}
+			)TT1
+		) WHERE MEMO_NO = #{memoNo}
+		ORDER BY NO DESC
+	</select>
+	
+	<!-- 수정 -->
+	<update id="do_update" parameterType="com.sist.retail.vo.NoticeVo">
+		UPDATE NOTICE_TB
+			SET TITLE = #{title},
+				 CON = #{con}
+		WHERE MEMO_NO = #{memoNo}
+	</update>
+
+	<!-- 삭제 -->
+	<update id="do_delete" parameterType="com.sist.retail.vo.NoticeVo">
+		DELETE FROM NOTICE_TB
+		WHERE MEMO_NO = #{memoNo}
+	</update>
+
+	<!-- 검색 -->
+	<sql id="search_param">
+		<where>
+			T1.STO_ID=T2.STO_ID AND
+			<choose>
+				<when test="search_div =='10' ">
+					T1.TITLE LIKE #{search_word} || '%'
+					AND T1.DIV_CD = #{divCd,jdbcType=VARCHAR}
+				</when>
+				<when test="search_div =='20' ">
+					T1.CON LIKE #{search_word} || '%'
+					AND T1.DIV_CD = #{divCd,jdbcType=VARCHAR}
+				</when>
+				<otherwise>
+					T1.DIV_CD = #{divCd,jdbcType=VARCHAR}
+				</otherwise>
+			</choose>
+		</where>
+	</sql>
+	<select id="do_search" parameterType="String" resultType="com.sist.retail.vo.NoticeVo">
+ 		SELECT TT1.MEMO_NO,	
+				TT1.TITLE,
+				TT1.CON,
+				TT1.DIV_CD,
+				TT1.STO_ID,
+				TT1.STO_NM,
+	 	CASE  WHEN	 TO_CHAR(TT1.REG_DT,'YYYY-MM-DD') = TO_CHAR(SYSDATE,'YYYY-MM-DD')
+	 		  THEN TO_CHAR(TT1.REG_DT, 'HH24:MI')
+	 		  ELSE TO_CHAR(TT1.REG_DT,'YYYY-MM-DD') END AS REG_DT,
+	 		  TT1.RNUM as NO,
+	 		  TT1.TOTAL_CNT as totalNo
+		FROM(
+				SELECT T1.* ,T2.STO_NM,
+				ROW_NUMBER() OVER (ORDER BY T1.REG_DT DESC)AS RNUM, COUNT(*) OVER() AS TOTAL_CNT
+				FROM NOTICE_TB T1, STORE_TB T2
+				<include refid="search_param"/>
+			)TT1
+		WHERE RNUM BETWEEN (10 * (#{page_num}-1)+1 ) AND (10 * (#{page_num}-1)+10) 
+		ORDER BY NO ASC
+	</select>
+	
+	<!-- 사용자 권한 조회 -->
+	<select id="do_searchGnt" parameterType="com.sist.retail.vo.MasterStoreVo"
+	resultType="com.sist.retail.vo.MasterStoreVo">
+		SELECT GNT_CD
+		FROM STORE_TB
+		WHERE STO_ID=#{stoId}
+	</select>
+	
+	
+	<!-- 댓글 목록 조회 -->
+	<select id="do_searchComment" parameterType="com.sist.retail.vo.CommentVo"
+		resultType="com.sist.retail.vo.CommentVo">
+		SELECT CMT_NO,
+		COMMENT_TB.STO_ID,
+		CASE WHEN TO_CHAR(CMT_DT,'YYYY-MM-DD') = TO_CHAR(SYSDATE,'YYYY-MM-DD')
+	 		  	THEN TO_CHAR(CMT_DT, 'HH24:MI')
+	 		 	ELSE TO_CHAR(CMT_DT,'YYYY-MM-DD') END AS CMT_DT,
+		CMT_CON,
+		MEMO_NO,
+		STO_NM
+		FROM COMMENT_TB,STORE_TB
+		WHERE COMMENT_TB.STO_ID = STORE_TB.STO_ID AND
+			   COMMENT_TB.MEMO_NO=#{memoNo,jdbcType=VARCHAR}
+		ORDER BY COMMENT_TB.CMT_NO
+	</select>
+	
+	
+		<!-- 댓글 등록 -->
+	<insert id="do_insertComment" parameterType="com.sist.retail.vo.CommentVo">
+		INSERT INTO COMMENT_TB
+		(
+		CMT_NO,
+		STO_ID,
+		CMT_DT,
+		CMT_CON,
+		MEMO_NO
+		)
+		VALUES
+		(
+		NVL((SELECT MAX(CMT_NO) FROM COMMENT_TB)+1,1),
+		#{stoId,jdbcType=VARCHAR},
+		SYSDATE,
+		#{cmtCon,jdbcType=VARCHAR},
+		#{memoNo,jdbcType=VARCHAR}
+		)
+	</insert>
+	
+	<!-- 게시글 삭제 시 댓글 삭제 -->
+	<delete id="do_deleteCommentCasCade" parameterType="com.sist.retail.vo.CommentVo">
+		DELETE FROM COMMENT_TB WHERE MEMO_NO =#{memoNo,jdbcType=VARCHAR}
+	</delete>
+	
+	<!-- 댓글 삭제 -->
+	<delete id="do_deleteComment" parameterType="com.sist.retail.vo.CommentVo">
+		DELETE FROM COMMENT_TB WHERE CMT_NO =#{cmtNo,jdbcType=VARCHAR}
+	</delete>
+	
+	<!-- 댓글 업데이트 -->
+	<update id="do_updateComment" parameterType="com.sist.retail.vo.CommentVo">
+		UPDATE COMMENT_TB
+		SET CMT_CON = #{cmtCon,jdbcType=VARCHAR},
+		CMT_DT = SYSDATE
+		WHERE CMT_NO =#{cmtNo,jdbcType=VARCHAR}
+	</update>
+	
+	
+</mapper>

@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:tx="http://www.springframework.org/schema/tx" xmlns:aop="http://www.springframework.org/schema/aop"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.2.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.2.xsd">
+
+	<!-- junit test -->
+	<bean class="org.springframework.mock.web.MockServletContext" />
+
+	<!-- SqlSession SqlSessionTemplate -->
+	<bean class="org.mybatis.spring.SqlSessionTemplate" id="sqlSessionTemplate"
+		destroy-method="clearCache">
+		<constructor-arg index="0" ref="sqlSessionFactoryBean" />
+	</bean>
+
+	<!--transaction처리 -->
+	<!-- Tx Advice -->
+	<bean class="com.sist.retail.common.TransactionAdvice" id="transactionAdvice">
+		<property name="transactionManager" ref="platformTransactionManager"></property>
+	</bean>
+
+	<!--Tx PointCut -->
+	<bean class="com.sist.retail.common.NameMatchClassMethodPointcut"
+		id="transactionPointcut">
+		<property name="mappedClassName" value="*SvcImpl"></property>
+		<property name="mappedName" value="*Tx"></property>
+	</bean>
+
+	<!-- Tx Advisor -->
+	<bean id="transactionAdvisor" class="org.springframework.aop.support.DefaultPointcutAdvisor">
+		<property name="advice" ref="transactionAdvice" />
+		<property name="pointcut" ref="transactionPointcut" />
+	</bean>
+
+	<!-- <aop:config proxy-target-class="true">
+		<aop:pointcut id="serviceOperation"
+			expression="execution(* com.sist.retail.*.*(..))" />
+		<aop:advisor id="transactionAdvisor" pointcut-ref="serviceOperation"
+			advice-ref="txAdvice" />
+	</aop:config>
+	<tx:advice id="txAdvice" transaction-manager="transactionManager">
+		<tx:attributes>
+			<tx:method name="*" rollback-for="Exception" />
+		</tx:attributes>
+	</tx:advice> -->
+	<!--//transaction처리 -->
+
+	<!-- SqlSessionFactory -->
+	<bean class="org.mybatis.spring.SqlSessionFactoryBean" id="sqlSessionFactoryBean">
+		<!-- Mybatis config.xml 읽기 -->
+		<property name="configLocation" value="classpath:mybatis-config.xml" />
+		<property name="dataSource" ref="dataSourceSpied" />
+		<property name="mapperLocations" value="classpath:mappers/**/*.xml" />
+	</bean>
+
+	<!-- Root Context: defines shared resources visible to all other web comonents -->
+	<bean id="dataSourceSpied" class="org.apache.commons.dbcp.BasicDataSource"
+		destroy-method="close" p:driverClassName="oracle.jdbc.driver.OracleDriver"
+		p:url="jdbc:oracle:thin:@211.238.142.109:1521:orcl" p:username="AC"
+		p:password="4321" p:maxActive="10" p:maxIdle="8" p:maxWait="-1" />
+
+	<bean id="dataSource" class="net.sf.log4jdbc.Log4jdbcProxyDataSource">
+		<constructor-arg ref="dataSourceSpied" />
+		<property name="logFormatter">
+			<bean class="net.sf.log4jdbc.tools.Log4JdbcCustomFormatter">
+				<property name="loggingType" value="MULTI_LINE" />
+				<property name="sqlPrefix" value="SQL]         :  " />
+			</bean>
+		</property>
+	</bean>
+
+	<!-- File Upload(사이즈,인코딩,...) -->
+	<bean
+		class="org.springframework.web.multipart.commons.CommonsMultipartResolver"
+		id="multipartResolver">
+		<property name="defaultEncoding" value="UTF-8" />
+		<!-- 5*10*1024*1024 = 50MB(52428800) -->
+		<property name="maxUploadSize" value="52428800" />
+		<property name="maxInMemorySize" value="52428800" />
+	</bean>
+	<!-- File Upload END -->
+
+	<!-- Mybatis 전환시 삭제할 예정 -->
+	<bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+		<property name="dataSource" ref="dataSource"></property>
+	</bean>
+
+	<bean id="platformTransactionManager"
+		class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="dataSourceSpied"></property>
+	</bean>
+</beans>

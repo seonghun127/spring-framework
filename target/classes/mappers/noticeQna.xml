@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sist.retail.mappers.noticeQna">
+
+	 <sql id="baseCondition">
+	    <where>
+	        <choose>
+	            <when test="search_div =='10' ">
+	                  QT.TITLE LIKE #{search_word} || '%'
+	                  AND QT.STO_ID = ST.STO_ID  
+	            </when>
+	            <when test="search_div =='20' ">
+	                  ST.STO_NM LIKE #{search_word} || '%'
+   	          			AND QT.STO_ID = ST.STO_ID  
+	            </when>
+	            <otherwise>QT.STO_ID = ST.STO_ID  </otherwise>          
+	        </choose>
+	    </where>
+	 </sql>
+	<!-- 문의 업데이트 -->
+	<update id="do_updateQna" parameterType="com.sist.retail.vo.NoticeQnaVo">
+		UPDATE QUESTION_TB
+			SET TITLE = #{title,jdbcType=VARCHAR},
+			QA_CON = #{qaCon,jdbcType=VARCHAR}
+		WHERE QA_NO=#{qaNo,jdbcType=VARCHAR}
+	</update>
+
+	<!-- 답변 업데이트 -->
+	<update id="do_updateAns" parameterType="com.sist.retail.vo.NoticeQnaVo">
+		UPDATE ANSWER_TB
+		SET ANS_CON = #{ansCon,jdbcType=VARCHAR},
+		ANS_DT = sysdate,
+		QA_NO = #{qaNo,jdbcType=VARCHAR}
+		WHERE ANS_NO =#{ansNo,jdbcType=VARCHAR}
+	</update>
+
+	<!-- 문의 삭제 -->
+	<delete id="do_deleteQna" parameterType="com.sist.retail.vo.NoticeQnaVo">
+		DELETE FROM QUESTION_TB WHERE QA_NO =#{qaNo,jdbcType=VARCHAR}
+	</delete>
+
+	<!-- 답변 삭제 -->
+	<delete id="do_deleteAns" parameterType="com.sist.retail.vo.NoticeQnaVo">
+		DELETE FROM ANSWER_TB WHERE ANS_NO =#{ansNo,jdbcType=VARCHAR}
+	</delete>
+
+	<!-- QNA 목록보기 -->
+	<select id="do_searchQna" parameterType="com.sist.retail.vo.NoticeQnaVo" resultType="com.sist.retail.vo.NoticeQnaVo">
+	SELECT TT1.QA_NO,
+			TT1.RNUM AS NO,
+			TT1.TITLE,
+			CASE WHEN TO_CHAR(TT1.QA_DT,'YYYY-MM-DD') = TO_CHAR(SYSDATE,'YYYY-MM-DD')
+	 		  	THEN TO_CHAR(TT1.QA_DT, 'HH24:MI')
+	 		 	ELSE TO_CHAR(TT1.QA_DT,'YYYY-MM-DD') END AS QA_DT,
+			TT1.STO_NM,
+			TT1.STO_ID,
+			TT1.TOTAL_NO AS TOTAL_NO
+	FROM(                                                          
+		    SELECT	QT.QA_NO
+					,QT.TITLE
+					,QT.QA_DT
+					,ST.STO_NM
+					,QT.STO_ID                                            
+		          	,ROW_NUMBER() OVER(ORDER BY QT.QA_DT DESC) AS RNUM 
+		          	,COUNT(*) OVER() AS TOTAL_NO                        
+		      FROM QUESTION_TB QT,STORE_TB ST	  
+			<include refid="baseCondition" />
+                                                                               
+		 )TT1                                                           
+		WHERE RNUM BETWEEN (#{page_size} * (#{page_num}-1)+1 ) 
+		  AND (#{page_size} * (#{page_num}-1)+#{page_size}) 
+	</select>
+
+	<!-- QNA 상세보기 -->
+	
+	<!--  -->
+	<select id="do_searchOneQna" parameterType="com.sist.retail.vo.NoticeQnaVo"
+		resultType="com.sist.retail.vo.NoticeQnaVo">
+	SELECT *FROM
+		   (SELECT TT1.QA_NO,
+					TT1.TITLE,
+					TT1.RNUM,
+					TT1.QA_CON,
+					TT1.STO_ID,
+					TT1.STO_NM,
+					CASE WHEN TO_CHAR(TT1.QA_DT,'YYYY-MM-DD') = TO_CHAR(SYSDATE,'YYYY-MM-DD')
+			 		  	 THEN TO_CHAR(TT1.QA_DT, 'HH24:MI')
+						 ELSE TO_CHAR(TT1.QA_DT,'YYYY-MM-DD') END AS QA_DT,
+					lead(TT1.QA_NO, 1, '') OVER (ORDER BY TT1.RNUM ASC) NEXT_QA_NO,
+					lead(TT1.TITLE, 1, '다음글이 없습니다.') OVER(ORDER BY TT1.RNUM ASC) NEXT_TITLE,
+					lag(TT1.QA_NO, 1, '') OVER (ORDER BY TT1.RNUM ASC) PRE_QA_NO,
+					lag(TT1.TITLE, 1, '이전글이 없습니다.') OVER(ORDER BY TT1.RNUM ASC) PRE_TITLE
+			FROM (						
+					SELECT QT.QA_NO, QT.TITLE, QT.QA_DT, QT.QA_CON, QT.STO_ID,
+							ST.STO_NM,
+							ROW_NUMBER() OVER(ORDER BY QT.QA_DT ASC) AS RNUM 
+					FROM QUESTION_TB QT,
+						  STORE_TB ST
+					WHERE QT.STO_ID = ST.STO_ID ORDER BY QT.QA_NO ASC 
+					) TT1
+			)A, 	
+			(SELECT T1.QA_NO,
+					CASE WHEN TO_CHAR(T1.ANS_DT,'YYYY-MM-DD') = TO_CHAR(SYSDATE,'YYYY-MM-DD')
+						 THEN TO_CHAR(T1.ANS_DT, 'HH24:MI')
+						 ELSE TO_CHAR(T1.ANS_DT,'YYYY-MM-DD') END AS ANS_DT,
+					T1.ANS_CON,
+					T1.ANS_NO
+			FROM (	
+					SELECT QT.QA_NO, QT.TITLE, QT.QA_DT, QT.QA_CON, QT.STO_ID,
+							AT.ANS_CON, AT.ANS_NO, AT.ANS_DT
+					FROM QUESTION_TB QT,
+						  ANSWER_TB AT
+					WHERE QT.QA_NO = AT.QA_NO (+) 
+					) T1
+			)B
+ WHERE A.QA_NO = B.QA_NO AND A.QA_NO = #{qaNo}
+	</select>
+	
+	<!-- QnA 등록 -->
+	<insert id="do_insertQna" parameterType="com.sist.retail.vo.NoticeQnaVo">
+		INSERT INTO QUESTION_TB
+		(
+		QA_NO,
+		TITLE,
+		QA_CON,
+		QA_DT,
+		STO_ID
+		)
+		VALUES
+		(
+		(SELECT NVL(MAX(QA_NO)+1,1) FROM QUESTION_TB),
+		#{title},
+		#{qaCon},
+		sysdate,
+		#{stoId}
+		)
+	</insert>
+
+	<!-- Ans 등록 -->
+	<insert id="do_insertAns" parameterType="com.sist.retail.vo.NoticeQnaVo">
+		INSERT INTO ANSWER_TB
+		(
+		ANS_NO,
+		ANS_CON,
+		ANS_DT,
+		QA_NO
+		)
+		VALUES
+		(
+		(SELECT NVL(MAX(ANS_NO)+1,1) FROM ANSWER_TB),
+		#{ansCon},
+		sysdate,
+		#{qaNo}
+		)
+	</insert>
+<!-- 게시글 보기+ 이전글/다음글 -->
+<!-- 
+SELECT * FROM (SELECT TT1.MEMO_NO,	
+				TT1.TITLE,
+				TT1.CON,
+				TT1.DIV_CD,
+				TT1.STO_ID,
+	 	CASE  	WHEN TO_CHAR(TT1.REG_DT,'YYYY-MM-DD') = TO_CHAR(SYSDATE,'YYYY-MM-DD')
+	 		  	THEN TO_CHAR(TT1.REG_DT, 'HH24:MI')
+	 		 	ELSE TO_CHAR(TT1.REG_DT,'YYYY-MM-DD') END AS REG_DT,
+	 		  	TT1.RNUM AS NO,
+	 		  	lead(MEMO_NO, 1, '') over(ORDER BY REG_DT) next_MEMO_NO,
+        		lead(TITLE, 1, '다음글이 없습니다.') over(ORDER BY REG_DT) next_TITLE,
+        		lag(MEMO_NO, 1, '') over(ORDER BY REG_DT) pre_REG_DT,
+        		lag(TITLE, 1, '이전글이 없습니다.') over(ORDER BY REG_DT) pre_TITLE
+		FROM(
+				SELECT T1.* ,ROW_NUMBER() OVER (ORDER BY T1.MEMO_NO)AS RNUM 
+				FROM NOTICE_TB T1
+			)TT1
+) WHERE MEMO_NO=4
+ -->
+</mapper>

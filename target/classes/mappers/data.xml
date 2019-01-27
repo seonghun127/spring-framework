@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sist.retail.mappers.data">
+<select id="sex_rank" resultType="com.sist.retail.vo.SaleVo">
+	SELECT CODE_TB.DET_CD_NM as SEX,
+			 PDT_NO,
+		 	 TO_NUMBER(TOTAL_SAL_CNT) as SAL_CNT,
+       	 ROW_NUMBER() OVER (PARTITION BY SEX_CD ORDER BY to_number(TOTAL_SAL_CNT) DESC ) as RANK 
+	FROM 
+		SEX_SAL_TB,
+		CODE_TB 
+	WHERE 
+		SEX_SAL_TB.SEX_CD=CODE_TB.DET_CD_ID
+</select>
+<select id="age_rank" resultType="com.sist.retail.vo.SaleVo">
+
+</select>
+<select id="time_rank" resultType="com.sist.retail.vo.SaleVo">
+
+</select>
+</mapper>

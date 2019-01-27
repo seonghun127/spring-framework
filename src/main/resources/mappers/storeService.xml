@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sist.retail.mappers.storeService">
+	<!-- 
+	검색조건 SQL 첨가문    
+	 -->
+	  <sql id="baseCondition">
+	    <where>
+	        <choose>
+	            <when test="sido != null" > <!-- 시/도 검색 -->
+	                  ADR LIKE #{sido,jdbcType=VARCHAR} || '%' 
+	                  AND ADR LIKE '%' || #{gugun,jdbcType=VARCHAR}||'%'
+	            </when>
+	            <when test="gugun ==null"> <!-- 구/군 검색 -->
+	                 ADR LIKE #{sido,jdbcType=VARCHAR} || '%'
+	            </when>
+	            <otherwise>
+	            </otherwise>          
+	        </choose>
+	    </where>
+	 </sql>
+	 
+	<!-- 기간 매출 조회 -->
+	<select id="do_searchTermSale" parameterType="com.sist.retail.vo.SaleTermVo"
+	resultType="com.sist.retail.vo.SaleTermVo">
+		SELECT TO_CHAR(SAL.SAL_DT,'YYYY-MM-DD') SAL_DT, 
+				SUM(SAL.SAL_CNT*PDT.PRICE) TOTAL_SAL
+		
+		FROM PRODUCT_TB PDT,
+		  		SALE_TB SAL,
+				STORE_TB STR
+				
+		WHERE STR.STO_ID = #{stoId,jdbcType=VARCHAR} AND
+				TO_CHAR(SAL.SAL_DT,'yyyy-MM-dd') BETWEEN #{startDt} AND #{endDt} AND
+				PDT.PDT_NO = SAL.PDT_NO AND
+				STR.STO_ID = SAL.STO_ID
+		
+		GROUP BY TO_CHAR(SAL.SAL_DT,'YYYY-MM-DD')
+		ORDER BY SAL_DT ASC
+	</select>
+	
+	<!-- 금일 매출 현황 조회 -->
+	<select id="do_searchTodaySale" parameterType="com.sist.retail.vo.SaleTodayVo"
+	 resultType="com.sist.retail.vo.SaleTodayVo">
+		
+		SELECT PDT.PDT_NO,
+				PDT.PDT_GB,
+				PDT.PDT_NM,
+				PDT.PRICE,
+				SAL.SAL_CNT
+		
+		FROM PRODUCT_TB PDT,
+			  SALE_TB SAL,
+				STORE_TB STR
+				
+		WHERE STR.STO_ID = #{stoId} AND
+				TO_CHAR(SAL.SAL_DT,'yyyyMMdd') = TO_CHAR(sysdate,'yyyyMMdd') AND
+				PDT.PDT_NO = SAL.PDT_NO AND
+				STR.STO_ID = SAL.STO_ID
+				
+	</select>
+		  
+	<!-- 
+	마스터 및 사용자 입장에서 모든 지점 정보 리스트를 불러온다.
+	 -->
+	 
+	 <select id="do_searchStore" parameterType="com.sist.retail.vo.MasterStoreVo"
+	 resultType="com.sist.retail.vo.MasterStoreVo">
+	 	SELECT	STO_ID,
+	 			STO_NM,
+	 			OWN_ID,
+	 			PHO_NO,
+	 			ADR,
+	 			LAT,
+	 			LOT
+	 	FROM
+	 			STORE_TB
+	 	<include refid="baseCondition" /> 
+	 </select>
+	 
+	 <!-- 
+	 지점 정보 리스트를 페이징 처리하여 불러온다.
+	  -->
+	<select id="do_searchStorePaging" parameterType="com.sist.retail.vo.MasterStoreVo"
+	 resultType="com.sist.retail.vo.MasterStoreVo">
+	 	SELECT	TT1.STO_ID,
+	 			TT1.STO_NM,
+	 			TT1.OWN_ID,
+	 			TT1.PHO_NO,
+	 			TT1.ADR,
+	 			TT1.LAT,
+	 			TT1.LOT,
+	 			TT1.RNUM as NO,
+	 			TT1.TOTAL_CNT as totalNo
+	 	FROM(                                                          
+		    SELECT  T1.*                                                
+		           ,ROW_NUMBER() OVER(ORDER BY T1.STO_NM DESC ) AS RNUM 
+		           ,COUNT(*) OVER() AS TOTAL_CNT                        
+		      FROM STORE_TB T1   
+		  <include refid="baseCondition" />                                                                                
+		 )TT1     
+		 WHERE RNUM BETWEEN (#{page_size} * (#{page_num}-1)+1 ) 
+		  AND (#{page_size} * (#{page_num}-1)+#{page_size})  
+	 </select>
+	 <!--
+	 지점정보 수정시 해당 단건의 정보를 모두 불러온다.
+	  -->
+	  
+	 <select id="do_searchOneStore" parameterType="com.sist.retail.vo.MasterStoreVo"
+	 resultType="com.sist.retail.vo.MasterStoreVo">
+	 	SELECT STO_ID,
+	 			PWD,
+	 			STO_NM,
+	 			OWN_ID,
+	 			PHO_NO,
+	 			ADR,
+	 			LAT,
+	 			LOT
+	 	FROM
+	 			STORE_TB
+	 	WHERE
+	 			STO_ID = #{stoId,jdbcType=VARCHAR}  
+	 </select>
+ 	
+ </mapper>

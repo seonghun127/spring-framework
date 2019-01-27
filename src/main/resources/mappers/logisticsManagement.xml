@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sist.retail.mappers.logisticsManagement">
+
+ <sql id="search_param">
+		<where>
+			<choose>
+				<when test="search_div == '10'">   <!-- 지점명 -->
+					T1.CM_ID LIKE #{search_word} || '%'
+				</when>
+				<when test="search_div == '20'">   <!-- 주소명 -->
+					T1.NAME LIKE #{search_word} || '%'
+				</when>
+				<otherwise></otherwise>
+			</choose>
+		</where>
+	</sql>
+	
+
+<!-- 재고출력화면 ProductStock -->
+	<select id="do_search" parameterType="com.sist.retail.vo.ProductStockVo" resultType="com.sist.retail.vo.ProductStockVo">
+		
+		SELECT DISTINCT TT1.PDT_NO,
+				TT1.PDT_GB,
+				TT1.PDT_NM,
+				TT1.PRICE,
+				TT1.STK_CNT,
+				TT1.MK_NM,
+				TT1.ORD_CNT,
+				TT1.ORD_CD,
+				TT1.RNUM,
+				TT1.TOTAL_CNT as totalNo
+
+		FROM(
+			SELECT T1.PDT_NO,T1.PDT_GB,T1.PDT_NM,T1.PRICE,T1.STK_CNT,T1.MK_NM,T1.RNUM,T1.TOTAL_CNT,T1.STO_ID,T2.ORD_CNT,T2.ORD_CD FROM (SELECT P.PDT_NO,
+	                P.PDT_GB,
+	                P.PDT_NM,
+	                P.PRICE,
+                    S.STO_ID,
+                    S.STK_CNT,
+	                ROW_NUMBER() OVER(ORDER BY P.PDT_NO DESC ) AS RNUM,
+		            COUNT(*) OVER() AS TOTAL_CNT,       
+                   ( SELECT MK_NM FROM MAKER_TB WHERE MK_NO= p.MK_NO) as MK_NM
+	        FROM  
+	             STOCK_TB S
+	             LEFT OUTER JOIN PRODUCT_TB P 
+	               ON S.PDT_NO=P.PDT_NO 
+                   WHERE STO_ID=#{stoId,jdbcType=VARCHAR}) T1
+                    ,(SELECT * FROM ORDER_TB)T2
+                   WHERE T1.STO_ID=T2.STO_ID(+) AND T1.PDT_NO=T2.PDT_NO(+))TT1
+	   WHERE RNUM BETWEEN (#{page_size,jdbcType=VARCHAR} * (#{page_num,jdbcType=VARCHAR}-1)+1 ) 
+		   AND (#{page_size,jdbcType=VARCHAR} * (#{page_num,jdbcType=VARCHAR}-1)+#{page_size,jdbcType=VARCHAR})
+		   ORDER BY PDT_NO DESC   
+	        
+	</select>
+<!-- 상품군 재고출력화면 ProductStock -->
+	<select id="do_search_group" parameterType="com.sist.retail.vo.ProductStockVo" resultType="com.sist.retail.vo.ProductStockVo">
+			SELECT DISTINCT TT1.PDT_NO,
+				TT1.PDT_GB,
+				TT1.PDT_NM,
+				TT1.PRICE,
+				TT1.STK_CNT,
+				TT1.MK_NM,
+				TT1.ORD_CNT,
+				TT1.ORD_CD,
+				TT1.RNUM,
+				TT1.TOTAL_CNT as totalNo
+		FROM(
+			SELECT T1.PDT_NO,T1.PDT_GB,T1.PDT_NM,T1.PRICE,T1.STK_CNT,T1.MK_NM,T1.STO_ID,T1.STO_ID,T2.ORD_CNT,T2.ORD_CD,ROW_NUMBER() OVER(ORDER BY T1.PDT_NO DESC ) AS RNUM,COUNT(*) OVER() AS TOTAL_CNT FROM (SELECT P.PDT_NO,
+	                P.PDT_GB,
+	                P.PDT_NM,
+	                P.PRICE,
+                    S.STO_ID,
+                    S.STK_CNT,       
+                   ( SELECT MK_NM FROM MAKER_TB WHERE MK_NO= p.MK_NO) as MK_NM
+	        FROM  
+	             STOCK_TB S
+	             LEFT OUTER JOIN PRODUCT_TB P 
+	               ON S.PDT_NO=P.PDT_NO 
+                   WHERE STO_ID=#{stoId,jdbcType=VARCHAR}) T1
+                    ,(SELECT * FROM ORDER_TB)T2
+                   WHERE T1.STO_ID=T2.STO_ID(+) AND T1.PDT_NO=T2.PDT_NO(+) AND T1.PDT_GB=#{pdtGb,jdbcType=VARCHAR}
+	        )TT1
+	   WHERE RNUM BETWEEN (#{page_size,jdbcType=VARCHAR} * (#{page_num,jdbcType=VARCHAR}-1)+1 ) 
+		   AND (#{page_size,jdbcType=VARCHAR} * (#{page_num,jdbcType=VARCHAR}-1)+#{page_size,jdbcType=VARCHAR})   
+       
+	</select>
+
+<!-- 상품군별 인기순위 검색문 -->
+	<select id="do_search_favo" parameterType="com.sist.retail.vo.SaleProductVo" resultType="com.sist.retail.vo.SaleProductVo">
+		SELECT PDT_GB,PDT_NM, SUMSAL
+		FROM (
+    	  SELECT P.PDT_NO,P.PDT_GB,P.PDT_NM, SUM(SAL_CNT) AS SUMSAL
+   	 	  FROM SALE_TB A,PRODUCT_TB P 
+    	  WHERE A.PDT_NO = P.PDT_NO AND PDT_GB=#{pdtGb,jdbcType=VARCHAR}
+    	  GROUP BY P.PDT_NO,P.PDT_NM,P.PDT_GB
+      	  ORDER BY SUMSAL DESC
+     		 )P1
+   	     WHERE ROWNUM=1 OR ROWNUM=2 OR ROWNUM=3 
+	</select>
+<!-- 날씨조회 -->
+	<select id="do_search_one" parameterType="com.sist.retail.vo.SaleProductVo" resultType="com.sist.retail.vo.SaleProductVo">
+		SELECT ADR
+		FROM STORE_TB
+	     WHERE STO_ID = #{stoId,jdbcType=VARCHAR}
+	</select>
+</mapper>
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+

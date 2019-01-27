@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sist.retail.mappers.master">
+	 <sql id="baseCondition">
+	    <where>
+	        <choose>
+	            <when test="sido != null" > <!-- 시/도 검색 -->
+	                  ADR LIKE #{sido,jdbcType=VARCHAR} || '%' 
+	                  AND ADR LIKE '%' || #{gugun,jdbcType=VARCHAR}||'%'
+	            </when>
+	           <!--  <when test="gugun == null"> 구/군 검색
+	                 ADR LIKE #{sido,jdbcType=VARCHAR} || '%'
+	            </when> -->
+	            <otherwise>
+	            </otherwise>          
+	        </choose>
+	    </where>
+	 </sql>
+	 
+	<!-- 발주 데이터 삭제 -->
+	<delete id="order_delete" parameterType="com.sist.retail.vo.ProductStockVo">
+		DELETE FROM ORDER_TB WHERE STO_ID = #{stoId,jdbcType=VARCHAR}
+	</delete>
+	<!-- // 발주 데이터 삭제 -->
+	
+	<!-- 발주 신청 -->
+	<insert id="order_application" parameterType="com.sist.retail.vo.ProductStockVo">
+		INSERT INTO ORDER_TB
+			(
+				STO_ID,
+				PDT_NO,
+				ORD_CNT,
+				ORD_DT,
+				ORD_CD
+			)
+		VALUES
+			(
+				#{stoId,jdbcType=VARCHAR},
+				#{pdtNo,jdbcType=VARCHAR},
+				#{ordCnt,jdbcType=VARCHAR},
+				SYSDATE,
+				'A3_02'
+			)
+	</insert>
+	<!-- // 발주 신청 -->
+	
+	<!-- 발주 상품 출력 -->
+		<select id="order_print" parameterType="com.sist.retail.vo.ProductStockVo"
+		resultType="com.sist.retail.vo.ProductStockVo">
+			SELECT TT1.STO_ID,TT1.STO_NM,
+				CASE  	WHEN TO_CHAR(TT1.ORD_DT,'YYYY-MM-DD') = TO_CHAR(SYSDATE,'YYYY-MM-DD')
+			 		  	THEN TO_CHAR(TT1.ORD_DT, 'HH24:MI')
+			 		 	ELSE TO_CHAR(TT1.ORD_DT,'YYYY-MM-DD') END AS ORD_DT
+			,TT1.PDT_NO,TT1.PDT_NM,TT1.ORD_CNT,TT1.ORD_CD,TT1.TOTAL_NO
+			FROM (                                                          
+		    SELECT STO.STO_ID,STO.STO_NM,ORD_DT,PDT.PDT_NO,PDT.PDT_NM,ORD.ORD_CNT,ORD.ORD_CD                                                 
+		           ,ROW_NUMBER() OVER(ORDER BY ORD_DT DESC ) AS RNUM 
+		           ,COUNT(*) OVER() AS TOTAL_NO                        
+		      FROM ORDER_TB ORD,STORE_TB STO, PRODUCT_TB PDT
+			WHERE ORD.STO_ID = STO.STO_ID
+				AND ORD.PDT_NO = PDT.PDT_NO
+				AND ORD.STO_ID = #{stoId,jdbcType=VARCHAR}                                                                       
+		 )TT1                                                          
+		
+		</select> 
+	<!-- // 발주 상품 출력 -->
+	
+	<!-- 발주 승인 -->
+		<update id="order_state_change" parameterType="com.sist.retail.vo.ProductStockVo">
+			UPDATE ORDER_TB
+				SET ORD_CD = 'A3_03'
+			WHERE STO_ID = #{stoId,jdbcType=VARCHAR}
+		</update>
+	<!-- // 발주 승인 -->
+	
+	<!-- 발주 신청 지점 출력 -->
+	<select id="order_store_list" parameterType="com.sist.retail.vo.ProductStockVo"
+	resultType="com.sist.retail.vo.ProductStockVo">
+		SELECT DISTINCT TT1.STO_NM, TT1.ORD_CD, TT1.STO_ID,TT1.TOTAL_NO
+		FROM(                                                          
+		    SELECT STO_NM, ORD_CD, STO.STO_ID                                               
+		           ,ROW_NUMBER() OVER(ORDER BY ORD_DT DESC) AS RNUM 
+		           ,COUNT(*) OVER() AS TOTAL_NO                        
+		      FROM STORE_TB STO LEFT OUTER JOIN ORDER_TB ORD 
+					ON STO.STO_ID = ORD.STO_ID
+		<include refid="baseCondition" />                                                                          
+		 )TT1                                                          
+		WHERE RNUM BETWEEN (#{page_size} * (#{page_num}-1)+1) 
+		  AND (#{page_size} * (#{page_num}-1)+#{page_size})  
+	</select>
+	<!-- // 발주 신청 지점 출력 -->
+	
+	<!-- 발주 확인 -->
+		<!-- 발주 상태 변화(대기) -->
+			<update id="order_confirm" parameterType="com.sist.retail.vo.ProductStockVo">
+				UPDATE ORDER_TB
+					SET ORD_CD = 'A3_01',
+						ORD_CNT = 0
+					WHERE STO_ID = #{stoId,jdbcType=VARCHAR}
+			</update>
+		<!-- // 발주 상태 변화(대기) -->
+		
+		<!-- 상품 재고량 변경 -->
+			<update id="stock_count_change" parameterType="com.sist.retail.vo.ProductStockVo">
+				UPDATE STOCK_TB
+					SET STK_CNT = STK_CNT + #{ordCnt,jdbcType=VARCHAR}
+				WHERE PDT_NO = #{pdtNo,jdbcType=VARCHAR}
+					AND STO_ID = #{stoId,jdbcType=VARCHAR} 
+			</update>
+		<!-- // 상품 재고량 변경 -->
+	<!-- // 발주 확인 -->
+
+
+	<!-- 조회 -->
+	<select id="do_search" parameterType="com.sist.retail.vo.MasterStoreVo"
+		resultType="com.sist.retail.vo.MasterStoreVo">
+		SELECT STO_ID,
+				PWD,
+				STO_NM,
+				OWN_ID,
+				PHO_NO,
+				ADR
+			FROM STORE_TB
+	</select>
+	
+	<!-- 로그인 -->
+	<select id="do_login" parameterType="com.sist.retail.vo.MasterStoreVo"
+		resultType="com.sist.retail.vo.MasterStoreVo">
+		SELECT ROWNUM AS CHK,
+				GNT_CD
+		FROM STORE_TB
+		WHERE STO_ID = #{stoId,jdbcType=VARCHAR} AND PWD = #{pwd,jdbcType=VARCHAR}
+	</select>
+		<!-- 시퀀스 -->
+	<select id="do_getCount" resultType="int">
+		SELECT COUNT(STO_ID)
+		FROM STORE_TB
+	</select>
+	
+	<!-- 회원 가입시 자동으로 재고 테이블에 해당 지점 재고INSERT -->
+	<insert id="do_addStock" parameterType="com.sist.retail.vo.MasterStoreVo">
+		INSERT INTO STOCK_TB 
+			(PDT_NO,STO_ID,STK_CNT)
+		SELECT PDT_NO, #{stoId}, 0
+			FROM PRODUCT_TB ORDER BY PDT_NO DESC	
+	</insert>
+	
+	<!-- 가입 -->
+	<update id="do_add" parameterType="com.sist.retail.vo.MasterStoreVo">
+		INSERT INTO STORE_TB 
+		(
+			STO_ID,
+			STO_NM,          
+			PWD,           
+			OWN_ID,
+			PHO_NO,  
+			ADR, 
+			LAT,
+			LOT,
+			GNT_CD   
+	  	)
+	  	VALUES 
+	  	(
+	  		#{stoId},  
+	  		#{stoNm},                 
+	    	#{pwd},
+			#{ownId},
+			#{phoNo},
+			#{adr},
+			#{lat},
+			#{lot},
+			#{gntCd}
+	  	)                 
+	</update>
+	
+	<select id="do_searchOne" parameterType="com.sist.retail.vo.MasterStoreVo" resultType="com.sist.retail.vo.MasterStoreVo">
+		SELECT 
+			STO_ID,
+			STO_NM,
+			PWD,
+			OWN_ID,
+			PHO_NO,
+			ADR
+		FROM STORE_TB
+		WHERE STO_ID = #{stoId}
+	</select>
+	
+	<!-- 수정 -->
+	<update id="do_update" parameterType="com.sist.retail.vo.MasterStoreVo">
+		UPDATE STORE_TB
+			SET STO_ID = #{stoId}, 
+				 STO_NM = #{stoNm},
+				 PWD = #{pwd},
+				 OWN_ID = #{ownId},
+				 PHO_NO = #{phoNo},
+				 ADR = #{adr}
+		WHERE STO_ID=#{stoId}
+	</update>
+	<!-- 통계 데이터 -->
+	<select id="sex_rank" resultType="com.sist.retail.vo.SaleVo">
+	SELECT * FROM
+	(SELECT CODE_TB.DET_CD_NM as SEX,
+			 PRODUCT_TB.PDT_NM,
+		 	 TO_NUMBER(TOTAL_SAL_CNT) as SAL_CNT,
+       	 ROW_NUMBER() OVER (PARTITION BY SEX_CD ORDER BY to_number(TOTAL_SAL_CNT) DESC ) as RANK 
+	FROM 
+		SEX_SAL_TB,
+		CODE_TB,
+		PRODUCT_TB 
+	WHERE 
+		SEX_SAL_TB.SEX_CD=CODE_TB.DET_CD_ID AND SEX_SAL_TB.PDT_NO=PRODUCT_TB.PDT_NO)
+		WHERE RANK <![CDATA[ <= ]]>10
+	</select>
+	
+	<select id="age_rank" resultType="com.sist.retail.vo.SaleVo">
+	SELECT * FROM
+	(SELECT CODE_TB.DET_CD_NM as AGE,
+			 PRODUCT_TB.PDT_NM,
+		 	 TO_NUMBER(TOTAL_SAL_CNT) as SAL_CNT,
+       	 ROW_NUMBER() OVER (PARTITION BY AGE_CD ORDER BY to_number(TOTAL_SAL_CNT) DESC ) as RANK 
+	FROM 
+		AGE_SAL_TB,
+		CODE_TB,
+		PRODUCT_TB 
+	WHERE 
+		AGE_SAL_TB.AGE_CD=CODE_TB.DET_CD_ID AND AGE_SAL_TB.PDT_NO=PRODUCT_TB.PDT_NO)
+		WHERE RANK <![CDATA[ <= ]]>10
+	</select>
+	
+	<select id="time_rank" resultType="com.sist.retail.vo.SaleVo">
+	SELECT * FROM
+	(SELECT TIME,
+			 PRODUCT_TB.PDT_NM,
+		 	 TO_NUMBER(TOTAL_SAL_CNT) as SAL_CNT,
+       	 ROW_NUMBER() OVER (PARTITION BY TIME ORDER BY to_number(TOTAL_SAL_CNT) DESC ) as RANK 
+	FROM 
+		TIME_SAL_TB,
+		PRODUCT_TB 
+	WHERE 
+		TIME_SAL_TB.PDT_NO=PRODUCT_TB.PDT_NO)
+		WHERE RANK <![CDATA[ <= ]]>10
+	</select>	
+	
+</mapper>
+
+
+
+
+
+
+
+
+
+
+
+
+

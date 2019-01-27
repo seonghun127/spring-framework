@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sist.retail.mappers.sale">
+ 
+ 
+ <insert id="do_sale" parameterType="com.sist.retail.vo.SaleVo">
+  INSERT INTO SALE_TB
+   (
+     STO_ID,
+     SAL_DT,
+     PDT_NO,
+     SAL_CNT,
+     SEX_CD,
+     AGE_CD
+   )
+   VALUES
+   (
+     #{stoId,jdbcType=VARCHAR},
+     SYSDATE,
+     #{pdtNo,jdbcType=VARCHAR},
+     #{salCnt,jdbcType=NUMERIC},
+     #{sexCd,jdbcType=VARCHAR},
+     #{ageCd,jdbcType=VARCHAR}
+   )
+ </insert>
+ <update id="do_update" parameterType="com.sist.retail.vo.ProductStockVo">
+ UPDATE STOCK_TB 
+	SET	STK_CNT = CASE WHEN STK_CNT <![CDATA[ >= ]]> #{stkCnt,jdbcType=NUMERIC} THEN STK_CNT-#{stkCnt,jdbcType=NUMERIC} ELSE 99999999999
+	END	
+	WHERE PDT_NO = #{pdtNo,jdbcType=VARCHAR} 
+ 	AND STO_ID = #{stoId,jdbcType=VARCHAR}
+ </update>
+</mapper>
