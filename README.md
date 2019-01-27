@@ -17,9 +17,7 @@ front-end : html5, jsp, jstl, javascript(jQuery, ajax), bootstrap, tiles
 
 ## Authors
 
-* **김성훈** 외 6명
-
-[git](https://github.com/seonghun127)
+* **김성훈** 외 6명 [git](https://github.com/seonghun127)
 
 ## Roles
 
@@ -33,13 +31,13 @@ front-end : html5, jsp, jstl, javascript(jQuery, ajax), bootstrap, tiles
 
 2. 지점별 발주 이벤트 처리 
 
-[[back-end]](https://github.com/seonghun127/spring-framework/tree/master/src/main/java/com/sist/retail/order)  [[front-end]](https://github.com/seonghun127/spring-framework/tree/master/src/main/webapp/master)
+      [[back-end]](https://github.com/seonghun127/spring-framework/tree/master/src/main/java/com/sist/retail/order)  [[front-end]](https://github.com/seonghun127/spring-framework/tree/master/src/main/webapp/master)
 
 3. 건의사항 
 
-[[back-end]](https://github.com/seonghun127/spring-framework/tree/master/src/main/java/com/sist/retail/qna)  [[front-end]](https://github.com/seonghun127/spring-framework/tree/master/src/main/webapp/notice)
+      [[back-end]](https://github.com/seonghun127/spring-framework/tree/master/src/main/java/com/sist/retail/qna)  [[front-end]](https://github.com/seonghun127/spring-framework/tree/master/src/main/webapp/notice)
 
 4. 댓글 
 
-[[back-end]](https://github.com/seonghun127/spring-framework/tree/master/src/main/java/com/sist/retail/ans)  [[front-end]](https://github.com/seonghun127/spring-framework/tree/master/src/main/webapp/notice)
+      [[back-end]](https://github.com/seonghun127/spring-framework/tree/master/src/main/java/com/sist/retail/ans)  [[front-end]](https://github.com/seonghun127/spring-framework/tree/master/src/main/webapp/notice)
 
